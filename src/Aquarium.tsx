@@ -35,7 +35,7 @@ export const Aquarium = ({ width, height }: { width: number; height: number }) =
     // 1. お魚の初期化
     imageNames.forEach((name) => {
       const img = new Image();
-      img.src = `/${name}`;
+      img.src = `${import.meta.env.BASE_URL}${name}`;
       const baseY = Math.random() * height;
       fishes.push({
         x: Math.random() * width,
