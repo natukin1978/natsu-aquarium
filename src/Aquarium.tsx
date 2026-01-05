@@ -3,10 +3,20 @@ import { useEffect, useRef } from 'react';
 interface Fish {
   x: number;
   y: number;
-  vx: number; // 横方向の速度
-  vy: number; // 縦方向の速度
+  baseY: number;
+  speed: number;
+  dir: number;
   image: HTMLImageElement;
   phase: number;
+  offsetY: number;
+}
+
+interface Bubble {
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  offset: number;
 }
 
 export const Aquarium = ({ width, height }: { width: number; height: number }) => {
@@ -20,81 +30,101 @@ export const Aquarium = ({ width, height }: { width: number; height: number }) =
 
     let animationFrameId: number;
     const fishes: Fish[] = [];
+    const bubbles: Bubble[] = [];
     const imageNames = ['fish1.png', 'fish2.png', 'fish3.png', 'fish4.png', 'fish5.png', 'fish6.png'];
 
-    // 1. お魚の初期化 (少し多めの15匹くらいにしてみましょう)
-    for (let i = 0; i < 15; i++) {
+    // 1. お魚の初期化
+    for (let i = 0; i < 12; i++) {
       const img = new Image();
       img.src = `${import.meta.env.BASE_URL}${imageNames[i % imageNames.length]}`;
+      const baseY = Math.random() * height;
       fishes.push({
         x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 2, // -1 ~ 1 のランダムな速度
-        vy: (Math.random() - 0.5) * 1,
+        y: baseY,
+        baseY: baseY,
+        speed: 0.4 + Math.random() * 0.6,
+        dir: Math.random() > 0.5 ? 1 : -1,
         image: img,
-        phase: Math.random() * Math.PI * 2
+        phase: Math.random() * Math.PI * 2,
+        offsetY: 0
       });
     }
 
+    // 2. 泡の初期化
+    for (let i = 0; i < 20; i++) {
+      bubbles.push({
+        x: Math.random() * width,
+        y: Math.random() * height,
+        size: 1 + Math.random() * 3,
+        speed: 0.3 + Math.random() * 0.7,
+        offset: Math.random() * 100
+      });
+    }
+
+    let time = 0;
+
     const render = () => {
+      time += 0.015;
+      
+      // 背景描画
       ctx.fillStyle = '#004466';
       ctx.fillRect(0, 0, width, height);
 
-      const margin = 50; // 画面端で跳ね返すためのマージン
-      const turnSpeed = 0.2; // 端で向きを変える強さ
-      const avoidDistance = 40; // 分離（避ける）を開始する距離
-      const avoidFactor = 0.05; // 避ける力の強さ
+      // --- 泡の描画と更新 ---
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      ctx.lineWidth = 1;
+      bubbles.forEach(b => {
+        b.y -= b.speed;
+        const xShake = Math.sin(time + b.offset) * 3;
+        
+        ctx.beginPath();
+        ctx.arc(b.x + xShake, b.y, b.size, 0, Math.PI * 2);
+        ctx.stroke();
 
-      fishes.forEach(f1 => {
-        // --- 分離 (Separation) ロジック ---
-        let closeDX = 0;
-        let closeDY = 0;
+        if (b.y < -20) {
+          b.y = height + 20;
+          b.x = Math.random() * width;
+        }
+      });
 
-        fishes.forEach(f2 => {
-          if (f1 === f2) return; // 自分自身は無視
+      // --- お魚の描画と更新 ---
+      fishes.forEach((f1, i) => {
+        // 重なり防止（分離ロジック）
+        let yPush = 0;
+        let xPush = 0;
+        const personalSpace = 70;
 
+        fishes.forEach((f2, j) => {
+          if (i === j) return;
           const dx = f1.x - f2.x;
           const dy = f1.y - f2.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          // もし他のお魚が近すぎたら
-          if (distance < avoidDistance) {
-            closeDX += dx;
-            closeDY += dy;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist < personalSpace) {
+            yPush += (dy > 0 ? 1 : -1) * (personalSpace - dist) * 0.04;
+            const isAhead = (f1.dir > 0 && dx < 0) || (f1.dir < 0 && dx > 0);
+            xPush += isAhead ? -0.15 : 0.15;
           }
         });
 
-        // 避ける方向に速度を少し加える
-        f1.vx += closeDX * avoidFactor;
-        f1.vy += closeDY * avoidFactor;
+        // 動きの計算
+        f1.offsetY = f1.offsetY * 0.96 + yPush;
+        const currentSpeed = f1.speed + xPush;
+        f1.x += Math.max(0.2, currentSpeed) * f1.dir;
+        
+        const wave = Math.sin(time + f1.phase) * 15;
+        f1.y = f1.baseY + wave + f1.offsetY;
 
-        // --- 画面端での挙動 ---
-        if (f1.x < margin) f1.vx += turnSpeed;
-        if (f1.x > width - margin) f1.vx -= turnSpeed;
-        if (f1.y < margin) f1.vy += turnSpeed;
-        if (f1.y > height - margin) f1.vy -= turnSpeed;
+        // ループ処理
+        if (f1.x > width + 100) f1.x = -100;
+        if (f1.x < -100) f1.x = width + 100;
 
-        // --- 速度の制限 (速くなりすぎないように) ---
-        const speedLimit = 2;
-        const currentSpeed = Math.sqrt(f1.vx * f1.vx + f1.vy * f1.vy);
-        if (currentSpeed > speedLimit) {
-          f1.vx = (f1.vx / currentSpeed) * speedLimit;
-          f1.vy = (f1.vy / currentSpeed) * speedLimit;
-        }
-
-        // 位置の更新
-        f1.x += f1.vx;
-        f1.y += f1.vy;
-
-        // --- 描画 ---
+        // お魚の描画
         ctx.save();
         ctx.translate(f1.x, f1.y);
-        
-        // vxの向きに合わせて反転 (右なら正、左なら負)
-        if (f1.vx < 0) ctx.scale(-1, 1);
-        
+        if (f1.dir === -1) ctx.scale(-1, 1);
         if (f1.image.complete) {
-          ctx.drawImage(f1.image, -25, -25, 50, 50);
+          ctx.drawImage(f1.image, -30, -30, 60, 60);
         }
         ctx.restore();
       });
@@ -107,8 +137,13 @@ export const Aquarium = ({ width, height }: { width: number; height: number }) =
   }, [width, height]);
 
   return (
-    <div style={{ backgroundColor: '#111', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <canvas ref={canvasRef} width={width} height={height} style={{ display: 'block' }} />
+    <div style={{ backgroundColor: '#111', height: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+      <canvas 
+        ref={canvasRef} 
+        width={width} 
+        height={height} 
+        style={{ display: 'block', boxShadow: '0 0 50px rgba(0,0,0,0.5)' }} 
+      />
     </div>
   );
 };
