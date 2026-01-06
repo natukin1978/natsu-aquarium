@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 
-// --- 型定義 ---
 interface Fish {
   x: number;
   y: number;
@@ -20,12 +19,11 @@ interface Bubble {
   offset: number;
 }
 
-// 新しく追加: 水草のデータ構造
 interface Weed {
-  x: number;      // 生える位置
-  height: number; // 高さ
-  width: number;  // 太さ
-  phase: number;  // 揺れのタイミング
+  x: number;
+  targetHeight: number;
+  widthRatio: number;
+  phase: number;
 }
 
 export const Aquarium = ({ width, height, count }: { width: number; height: number; count: number }) => {
@@ -40,19 +38,20 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
     let animationFrameId: number;
     const fishes: Fish[] = [];
     const bubbles: Bubble[] = [];
-    const weeds: Weed[] = []; // 水草の配列
+    const weeds: Weed[] = [];
     const imageNames = ['fish1.png', 'fish2.png', 'fish3.png', 'fish4.png', 'fish5.png', 'fish6.png'];
 
-    // 1. お魚の初期化 (既存)
+    // --- 1. お魚の初期化 (サイズ比率は描画時に調整) ---
     for (let i = 0; i < count; i++) {
       const img = new Image();
       img.src = `${import.meta.env.BASE_URL}${imageNames[i % imageNames.length]}`;
-      const baseY = Math.random() * (height - 100); // 砂に埋もれすぎないように調整
+      // 砂底に潜りすぎないよう、上部70%をベースにする
+      const baseY = Math.random() * (height * 0.7); 
       fishes.push({
         x: Math.random() * width,
         y: baseY,
         baseY: baseY,
-        speed: 0.4 + Math.random() * 0.6,
+        speed: 0.5 + Math.random() * 0.8,
         dir: Math.random() > 0.5 ? 1 : -1,
         image: img,
         phase: Math.random() * Math.PI * 2,
@@ -60,113 +59,121 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
       });
     }
 
-    // 2. 泡の初期化 (既存)
-    const bubbleCount = Math.max(10, count * 1.5); 
+    // --- 2. 泡の初期化 ---
+    const bubbleCount = Math.max(15, count * 1.2); 
     for (let i = 0; i < bubbleCount; i++) {
       bubbles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        size: 1 + Math.random() * 3,
-        speed: 0.3 + Math.random() * 0.7,
+        size: 1 + Math.random() * 2.5,
+        speed: 0.2 + Math.random() * 0.5,
         offset: Math.random() * 100
       });
     }
 
-    // 3. 水草の初期化 (新規)
-    // 画面幅に合わせて適度な本数を生やす (例: 150pxごとに1本くらい)
-    const weedCount = Math.floor(width / 150) + 2;
-    for (let i = 0; i < weedCount; i++) {
-      weeds.push({
-        x: (width / weedCount) * i + Math.random() * 50, // 均等配置＋ランダムなズレ
-        height: 150 + Math.random() * 150, // 高さは150~300px
-        width: 15 + Math.random() * 10,    // 太さは15~25px
-        phase: Math.random() * Math.PI * 2
-      });
+    // --- 3. 水草の「群生」初期化 ---
+    // 数カ所の「拠点」を作成し、その周りに数本ずつ生やす
+    const clusterCount = Math.floor(width / 300); // 300pxごとに1拠点
+    for (let c = 0; c < clusterCount; c++) {
+      const centerX = (width / clusterCount) * c + (Math.random() * 100);
+      const weedsInCluster = 3 + Math.floor(Math.random() * 4); // 1拠点に3〜6本
+      
+      for (let i = 0; i < weedsInCluster; i++) {
+        weeds.push({
+          x: centerX + (Math.random() - 0.5) * 60, // 拠点の左右30px以内に配置
+          targetHeight: 0.4 + Math.random() * 0.4, // 高さの40%〜80%
+          widthRatio: 0.04 + Math.random() * 0.03, // 太めにする
+          phase: Math.random() * Math.PI * 2
+        });
+      }
     }
 
     let time = 0;
 
     const render = () => {
-      time += 0.015;
+      time += 0.012; // 以前よりさらにゆったり
       
-      // --- レイヤー1: 背景色 ---
+      // 背景
       ctx.fillStyle = '#004466';
       ctx.fillRect(0, 0, width, height);
 
-      // --- レイヤー2: 海底の砂 (新規) ---
-      const sandHeight = Math.min(150, height * 0.25); // 高すぎないように制限
-      const sandY = height - sandHeight;
-      // グラデーションを作成 (上は明るく、下は暗く)
+      // --- 砂底 (高さの20%) ---
+      const sandH = height * 0.2;
+      const sandY = height - sandH;
       const sandGradient = ctx.createLinearGradient(0, sandY, 0, height);
-      sandGradient.addColorStop(0, '#d4c6a0'); // 明るい砂色
-      sandGradient.addColorStop(1, '#a89a78'); // 暗い砂色
+      sandGradient.addColorStop(0, '#d4c6a0');
+      sandGradient.addColorStop(1, '#a89a78');
       ctx.fillStyle = sandGradient;
-      ctx.fillRect(0, sandY, width, sandHeight);
+      ctx.fillRect(0, sandY, width, sandH);
 
-      // --- レイヤー3: ゆらゆら水草 (新規) ---
-      ctx.fillStyle = '#4f772d'; // 深緑色
+      // --- 水草 (群生) ---
+      ctx.fillStyle = 'rgba(79, 119, 45, 0.9)'; // 少し透けさせて重なりを綺麗に
       weeds.forEach(w => {
-        // 先端の揺れ幅を計算
-        const tipSway = Math.sin(time + w.phase) * 20;
+        const actualHeight = height * w.targetHeight;
+        const actualWidth = height * w.widthRatio;
+        const tipSway = Math.sin(time + w.phase) * (actualHeight * 0.2); 
         
         ctx.beginPath();
-        // 根元からスタート
-        ctx.moveTo(w.x - w.width / 2, height);
-        
-        // 左側のカーブを描く (ベジェ曲線)
-        // 制御点(中間)も少し揺らすことで、より自然な動きに
+        ctx.moveTo(w.x - actualWidth / 2, height);
         ctx.quadraticCurveTo(
-          w.x - w.width / 2 + tipSway * 0.5, height - w.height / 2, 
-          w.x + tipSway, height - w.height
+          w.x - actualWidth / 2 + tipSway * 0.5, height - actualHeight / 2, 
+          w.x + tipSway, height - actualHeight
         );
-        
-        // 右側のカーブを描いて戻る
         ctx.quadraticCurveTo(
-          w.x + w.width / 2 + tipSway * 0.5, height - w.height / 2,
-          w.x + w.width / 2, height
+          w.x + actualWidth / 2 + tipSway * 0.5, height - actualHeight / 2,
+          w.x + actualWidth / 2, height
         );
-        ctx.closePath();
         ctx.fill();
       });
 
-      // --- レイヤー4: 泡 (既存) ---
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+      // --- 泡 ---
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
       ctx.lineWidth = 1;
       bubbles.forEach(b => {
         b.y -= b.speed;
-        const xShake = Math.sin(time + b.offset) * 3;
+        const xShake = Math.sin(time + b.offset) * 2;
         ctx.beginPath();
         ctx.arc(b.x + xShake, b.y, b.size, 0, Math.PI * 2);
         ctx.stroke();
         if (b.y < -20) { b.y = height + 20; b.x = Math.random() * width; }
       });
 
-      // --- レイヤー5: お魚 (既存) ---
+      // --- お魚 (サイズ調整) ---
+      const fishSize = height * 0.25; // 縦幅200pxなら50pxサイズに
+
       fishes.forEach((f1, i) => {
-        // (回避ロジックは省略せず維持)
-        let yPush = 0; let xPush = 0; const personalSpace = 70;
+        // 回避ロジック
+        let yPush = 0; let xPush = 0;
+        const personalSpace = fishSize * 1.2; // 魚のサイズに合わせてパーソナルスペースを調整
+
         fishes.forEach((f2, j) => {
           if (i === j) return;
           const dx = f1.x - f2.x; const dy = f1.y - f2.y;
           const dist = Math.sqrt(dx * dx + dy * dy);
           if (dist < personalSpace) {
-            yPush += (dy > 0 ? 1 : -1) * (personalSpace - dist) * 0.04;
+            yPush += (dy > 0 ? 0.8 : -0.8) * (personalSpace - dist) * 0.05;
             const isAhead = (f1.dir > 0 && dx < 0) || (f1.dir < 0 && dx > 0);
-            xPush += isAhead ? -0.15 : 0.15;
+            xPush += isAhead ? -0.1 : 0.1;
           }
         });
+
         f1.offsetY = f1.offsetY * 0.96 + yPush;
         const currentSpeed = f1.speed + xPush;
-        f1.x += Math.max(0.2, currentSpeed) * f1.dir;
-        const wave = Math.sin(time + f1.phase) * 15;
+        f1.x += Math.max(0.3, currentSpeed) * f1.dir;
+        
+        // 浮き沈みの幅も魚のサイズに合わせる
+        const wave = Math.sin(time + f1.phase) * (height * 0.05);
         f1.y = f1.baseY + wave + f1.offsetY;
-        if (f1.x > width + 100) f1.x = -100;
-        if (f1.x < -100) f1.x = width + 100;
+
+        if (f1.x > width + fishSize) f1.x = -fishSize;
+        if (f1.x < -fishSize) f1.x = width + fishSize;
 
         ctx.save();
         ctx.translate(f1.x, f1.y);
         if (f1.dir === -1) ctx.scale(-1, 1);
-        if (f1.image.complete) ctx.drawImage(f1.image, -30, -30, 60, 60);
+        if (f1.image.complete) {
+          ctx.drawImage(f1.image, -fishSize/2, -fishSize/2, fishSize, fishSize);
+        }
         ctx.restore();
       });
 
