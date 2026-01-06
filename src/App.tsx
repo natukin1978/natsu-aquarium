@@ -1,20 +1,26 @@
-import { useEffect, useState } from 'react';
 import { Aquarium } from './Aquarium';
 
 function App() {
-  const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
-
-  useEffect(() => {
-    // URLのパラメータを取得 (?width=1200&height=300)
-    const params = new URLSearchParams(window.location.search);
-    const w = parseInt(params.get('width') || '800');
-    const h = parseInt(params.get('height') || '400');
-    setDimensions({ width: w, height: h });
-  }, []);
+  const params = new URLSearchParams(window.location.search);
+  
+  const width = parseInt(params.get('width') || '800', 10);
+  const height = parseInt(params.get('height') || '450', 10);
+  // お魚の数を取得（指定がなければ 12 匹）
+  const count = parseInt(params.get('count') || '12', 10);
 
   return (
-    <div style={{ backgroundColor: '#222', minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-      <Aquarium width={dimensions.width} height={dimensions.height} />
+    <div style={{ 
+      width: '100vw', 
+      height: '100vh', 
+      backgroundColor: '#111', 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      margin: 0,
+      overflow: 'hidden' 
+    }}>
+      {/* count も渡すように変更 */}
+      <Aquarium width={width} height={height} count={count} />
     </div>
   );
 }
