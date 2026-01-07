@@ -77,17 +77,23 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
     const render = () => {
       time += CONFIG.ENVIRONMENT.TIME_STEP;
       
-      // 1. 背景
-      ctx.fillStyle = '#004466';
+      // 1. 海の多段グラデーション (奥行きを出す)
+      const seaGradient = ctx.createLinearGradient(0, 0, 0, height);
+      seaGradient.addColorStop(0, '#005b8a'); // 水面（明るい）
+      seaGradient.addColorStop(0.5, '#004466'); // 中層
+      seaGradient.addColorStop(1, '#001a2d'); // 海底（深い暗色）
+      ctx.fillStyle = seaGradient;
       ctx.fillRect(0, 0, width, height);
 
-      // 2. 砂底
+      // 2. 砂底の多段グラデーション
       const sandH = height * CONFIG.ENVIRONMENT.SAND_RATIO;
-      const sandGradient = ctx.createLinearGradient(0, height - sandH, 0, height);
-      sandGradient.addColorStop(0, '#d4c6a0');
-      sandGradient.addColorStop(1, '#a89a78');
+      const sandTop = height - sandH;
+      const sandGradient = ctx.createLinearGradient(0, sandTop, 0, height);
+      sandGradient.addColorStop(0, '#e3d5b0'); // 砂の表面（光が当たっている）
+      sandGradient.addColorStop(0.2, '#d4c6a0'); // 標準的な砂
+      sandGradient.addColorStop(1, '#8a7e5d');   // 砂の深層（暗い）
       ctx.fillStyle = sandGradient;
-      ctx.fillRect(0, height - sandH, width, sandH);
+      ctx.fillRect(0, sandTop, width, sandH);
 
       // 3. 水草
       ctx.fillStyle = 'rgba(79, 119, 45, 0.85)';
@@ -116,20 +122,25 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
 
       // 5. 生き物
       fishes.forEach((f) => {
-        // タイプ別サイズ計算
+        // サイズ計算ロジック
         let sizeRatio = CONFIG.SWIMMER.SIZE_RATIO;
         if (f.type === 'Drifters') sizeRatio = CONFIG.DRIFTER.SIZE_RATIO;
         if (f.type === 'Crawlers') sizeRatio = CONFIG.CRAWLER.SIZE_RATIO;
-
         const w = height * sizeRatio;
         const h = w / f.aspectRatio;
 
-        // 回避と移動ロジック
+        // 移動ロジックの呼び出し
         updateFish(f, time, width, height, fishes);
 
         ctx.save();
         ctx.translate(f.x, f.y);
-        if (f.type === 'Swimmers' && f.dir === -1) ctx.scale(-1, 1);
+        
+        // 【修正ポイント】全タイプで向き（f.dir）を反映する
+        // f.dir が -1 なら左右反転させる
+        if (f.dir === -1) {
+          ctx.scale(-1, 1);
+        }
+
         ctx.drawImage(f.image, -w/2, -h/2, w, h);
         ctx.restore();
       });
