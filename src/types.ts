@@ -18,3 +18,11 @@ export interface Fish {
 
 export interface Bubble { x: number; y: number; size: number; speed: number; offset: number; }
 export interface Weed { x: number; targetHeight: number; widthRatio: number; phase: number; }
+
+export interface SandDetail {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  opacity: number;
+}
