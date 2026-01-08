@@ -51,21 +51,6 @@ export const drawLightRays = (ctx: CanvasRenderingContext2D, width: number, heig
   ctx.restore();
 };
 
-export const drawBubbles = (ctx: CanvasRenderingContext2D, bubbles: Bubble[], time: number, height: number) => {
-  ctx.save();
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-  ctx.lineWidth = 1;
-  bubbles.forEach(b => {
-    b.y -= b.speed;
-    const xShake = Math.sin(time + b.offset) * 2;
-    ctx.beginPath();
-    ctx.arc(b.x + xShake, b.y, b.size, 0, Math.PI * 2);
-    ctx.stroke();
-    if (b.y < -20) b.y = height + 20;
-  });
-  ctx.restore();
-};
-
 export const drawFish = (ctx: CanvasRenderingContext2D, f: Fish, height: number) => {
   let sizeRatio = CONFIG.SWIMMER.SIZE_RATIO;
   if (f.type === 'Drifters') sizeRatio = CONFIG.DRIFTER.SIZE_RATIO;

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Fish, Bubble, Weed, FishType, SandDetail } from './types';
+import type { Fish, Bubble, Weed, FishType, SandDetail, BubbleEmitter } from './types';
 import { CONFIG, FISH_ASSETS, FISH_RATIO } from './constants';
 import * as Draw from './drawUtils'; // まとめてインポート
 
@@ -100,56 +100,87 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
       }
     };
 
-    let nextBurstTime = 0; // 次のバーストが起きる時間
+    const burstBubbles: Bubble[] = [];
+    const emitters: BubbleEmitter[] = [];
+    let lastEmitterTime = 0;
 
     const render = () => {
-      const currentTime = performance.now(); // ミリ秒単位の時間
-
-      // 15秒〜30秒に一度、ランダムな場所でバーストを発生させる
-      if (currentTime > nextBurstTime) {
-        const burstX = Math.random() * width;
-        const burstCount = 10 + Math.random() * 10;
-
-        for (let i = 0; i < burstCount; i++) {
-          // 発生タイミングを少しずつずらして配列に追加
-          setTimeout(() => {
-            bubbles.push({
-              x: burstX + (Math.random() - 0.5) * 10, // 少し横に散らす
-              y: height + 10,
-              size: 0.5 + Math.random() * 4, // 大きな泡も混ぜる
-              speed: 0.5 + Math.random() * 1, // バーストなので少し速め
-              offset: Math.random() * 100
-            });
-          }, i * 100); // 0.1秒間隔でボコボコ出す
-        }
-
-        // 次のバーストまでの時間を設定
-        nextBurstTime = currentTime + 15000 + Math.random() * 15000;
-      }
-
-      // 泡の描画と寿命チェック
-      // 画面外に出た泡を削除する処理を追加（増えすぎ防止）
-      for (let i = bubbles.length - 1; i >= 0; i--) {
-        if (bubbles[i].y < -50) {
-          // 初期化時の15個（定数）はループさせ、バースト分は削除する
-          if (bubbles.length > 15) {
-            bubbles.splice(i, 1);
-          } else {
-            bubbles[i].y = height + 20;
-            bubbles[i].x = Math.random() * width;
-          }
-        }
-      }
-
+      const now = performance.now();
       time += CONFIG.ENVIRONMENT.TIME_STEP;
 
-      // 重なり順を考慮した描画
+      // --- 1. 既存の泡の更新（消さない機能：Draw.drawBubblesの代わり） ---
+      // 初期化時に bubbles に入れた 15個 は、画面外に出ても場所を変えてループさせます
+      bubbles.forEach(b => {
+        b.y -= b.speed;
+        if (b.y < -20) {
+          b.y = height + 20;
+          b.x = Math.random() * width;
+        }
+      });
+
+      // --- 2. ボコボコ泡（バースト）のエミッター管理（最大5箇所） ---
+      if (emitters.length < 5 && now - lastEmitterTime > 4000) {
+        emitters.push({
+          x: Math.random() * width,
+          startTime: now,
+          duration: 2000 + Math.random() * 3000,
+          isFinished: false
+        });
+        lastEmitterTime = now;
+      }
+
+      // --- 3. ボコボコ泡の生成 ---
+      emitters.forEach(e => {
+        const elapsed = now - e.startTime;
+        if (elapsed > e.duration) e.isFinished = true;
+
+        // 噴射中のエミッターから、burstBubbles 配列に泡を追加
+        if (!e.isFinished && burstBubbles.length < 80) {
+          if (Math.random() > 0.85) {
+            burstBubbles.push({
+              x: e.x + (Math.random() - 0.5) * 15,
+              y: height + 10,
+              size: 0.5 + Math.random() * 3,
+              speed: 1.2 + Math.random() * 1.0,
+              offset: Math.random() * 100
+            });
+          }
+        }
+      });
+
+      // --- 4. ボコボコ泡の移動と削除（画面外に出たら消す） ---
+      for (let i = burstBubbles.length - 1; i >= 0; i--) {
+        burstBubbles[i].y -= burstBubbles[i].speed;
+        if (burstBubbles[i].y < -20) {
+          burstBubbles.splice(i, 1);
+        }
+      }
+
+      // --- 5. 古くなったエミッターの削除（世代交代） ---
+      for (let i = emitters.length - 1; i >= 0; i--) {
+        // 噴射終了から3秒経ち、枠を空ける
+        if (emitters[i].isFinished && now - emitters[i].startTime > emitters[i].duration + 3000) {
+          emitters.splice(i, 1);
+        }
+      }
+
+      // --- 6. 全ての描画（レイヤー順） ---
       Draw.drawOcean(ctx, width, height);
       Draw.drawLightRays(ctx, width, height, time);
       Draw.drawSand(ctx, width, height, sandDetails);
-      Draw.drawBubbles(ctx, bubbles, time, height);
 
-      // 生き物の更新と描画
+      // 既存の泡とボコボコ泡の両方を描画
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      [...bubbles, ...burstBubbles].forEach(b => {
+        const xShake = Math.sin(time + b.offset) * 2;
+        ctx.beginPath();
+        ctx.arc(b.x + xShake, b.y, b.size, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+      ctx.restore();
+
+      // 生き物と水草の描画（水草が一番手前）
       fishes.forEach(f => {
         updateFish(f, time, width, height, fishes);
         Draw.drawFish(ctx, f, height);

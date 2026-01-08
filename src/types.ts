@@ -26,3 +26,10 @@ export interface SandDetail {
   height: number;
   opacity: number;
 }
+
+export interface BubbleEmitter {
+  x: number;
+  startTime: number;
+  duration: number;
+  isFinished: boolean;
+}
