@@ -95,7 +95,7 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
       for (let c = 0; c < clusterCount; c++) {
         const cx = (width / clusterCount) * c + (Math.random() * 100);
         for (let i = 0; i < 5; i++) {
-          weeds.push({ x: cx + (Math.random() - 0.5) * 80, targetHeight: 0.4 + Math.random() * 0.4, widthRatio: 0.04 + Math.random() * 0.02, phase: Math.random() * Math.PI * 2 });
+          weeds.push({ x: cx + (Math.random() - 0.5) * 80, targetHeight: 0.3 + Math.random() * 0.3, widthRatio: 0.04 + Math.random() * 0.02, phase: Math.random() * Math.PI * 2 });
         }
       }
     };
