@@ -100,7 +100,47 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
       }
     };
 
+    let nextBurstTime = 0; // 次のバーストが起きる時間
+
     const render = () => {
+      const currentTime = performance.now(); // ミリ秒単位の時間
+
+      // 15秒〜30秒に一度、ランダムな場所でバーストを発生させる
+      if (currentTime > nextBurstTime) {
+        const burstX = Math.random() * width;
+        const burstCount = 10 + Math.random() * 10;
+
+        for (let i = 0; i < burstCount; i++) {
+          // 発生タイミングを少しずつずらして配列に追加
+          setTimeout(() => {
+            bubbles.push({
+              x: burstX + (Math.random() - 0.5) * 10, // 少し横に散らす
+              y: height + 10,
+              size: 0.5 + Math.random() * 4, // 大きな泡も混ぜる
+              speed: 0.5 + Math.random() * 1, // バーストなので少し速め
+              offset: Math.random() * 100
+            });
+          }, i * 100); // 0.1秒間隔でボコボコ出す
+        }
+
+        // 次のバーストまでの時間を設定
+        nextBurstTime = currentTime + 15000 + Math.random() * 15000;
+      }
+
+      // 泡の描画と寿命チェック
+      // 画面外に出た泡を削除する処理を追加（増えすぎ防止）
+      for (let i = bubbles.length - 1; i >= 0; i--) {
+        if (bubbles[i].y < -50) {
+          // 初期化時の15個（定数）はループさせ、バースト分は削除する
+          if (bubbles.length > 15) {
+            bubbles.splice(i, 1);
+          } else {
+            bubbles[i].y = height + 20;
+            bubbles[i].x = Math.random() * width;
+          }
+        }
+      }
+
       time += CONFIG.ENVIRONMENT.TIME_STEP;
 
       // 重なり順を考慮した描画
