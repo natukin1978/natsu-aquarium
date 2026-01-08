@@ -108,8 +108,7 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
       const now = performance.now();
       time += CONFIG.ENVIRONMENT.TIME_STEP;
 
-      // --- 1. 既存の泡の更新（消さない機能：Draw.drawBubblesの代わり） ---
-      // 初期化時に bubbles に入れた 15個 は、画面外に出ても場所を変えてループさせます
+      // --- 1. 既存の泡の更新 ---
       bubbles.forEach(b => {
         b.y -= b.speed;
         if (b.y < -20) {
@@ -118,7 +117,7 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
         }
       });
 
-      // --- 2. ボコボコ泡（バースト）のエミッター管理（最大5箇所） ---
+      // --- 2. ボコボコ泡のエミッター管理 ---
       if (emitters.length < 5 && now - lastEmitterTime > 4000) {
         emitters.push({
           x: Math.random() * width,
@@ -133,8 +132,6 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
       emitters.forEach(e => {
         const elapsed = now - e.startTime;
         if (elapsed > e.duration) e.isFinished = true;
-
-        // 噴射中のエミッターから、burstBubbles 配列に泡を追加
         if (!e.isFinished && burstBubbles.length < 80) {
           if (Math.random() > 0.85) {
             burstBubbles.push({
@@ -148,7 +145,7 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
         }
       });
 
-      // --- 4. ボコボコ泡の移動と削除（画面外に出たら消す） ---
+      // --- 4. ボコボコ泡の移動と削除 ---
       for (let i = burstBubbles.length - 1; i >= 0; i--) {
         burstBubbles[i].y -= burstBubbles[i].speed;
         if (burstBubbles[i].y < -20) {
@@ -156,7 +153,7 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
         }
       }
 
-      // --- 5. 古くなったエミッターの削除（世代交代） ---
+      // --- 5. 古くなったエミッターの削除 ---
       for (let i = emitters.length - 1; i >= 0; i--) {
         // 噴射終了から3秒経ち、枠を空ける
         if (emitters[i].isFinished && now - emitters[i].startTime > emitters[i].duration + 3000) {
@@ -164,12 +161,14 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
         }
       }
 
-      // --- 6. 全ての描画（レイヤー順） ---
-      Draw.drawOcean(ctx, width, height);
-      Draw.drawLightRays(ctx, width, height, time);
+      // --- 6. 描画処理（レイヤー順） ---
+      // 背景を描画し、現在のサイクル値（昼夜の状態）を取得
+      const cycle = Draw.drawOcean(ctx, width, height, time);
+      // サイクル値を使って光の筋を描画（夜は消える）
+      Draw.drawLightRays(ctx, width, height, time, cycle);
       Draw.drawSand(ctx, width, height, sandDetails);
 
-      // 既存の泡とボコボコ泡の両方を描画
+      // 泡の描画
       ctx.save();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
       [...bubbles, ...burstBubbles].forEach(b => {

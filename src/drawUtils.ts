@@ -1,13 +1,45 @@
-import type { Fish, Bubble, Weed, SandDetail } from './types';
+import type { Fish, Weed, SandDetail } from './types';
 import { CONFIG } from './constants';
 
-export const drawOcean = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+// 2つの色を混ぜるヘルパー関数 ---
+const lerpColor = (col1: string, col2: string, amt: number) => {
+  const r1 = parseInt(col1.substring(1, 3), 16);
+  const g1 = parseInt(col1.substring(3, 5), 16);
+  const b1 = parseInt(col1.substring(5, 7), 16);
+
+  const r2 = parseInt(col2.substring(1, 3), 16);
+  const g2 = parseInt(col2.substring(3, 5), 16);
+  const b2 = parseInt(col2.substring(5, 7), 16);
+
+  const r = Math.round(r1 + (r2 - r1) * amt).toString(16).padStart(2, '0');
+  const g = Math.round(g1 + (g2 - g1) * amt).toString(16).padStart(2, '0');
+  const b = Math.round(b1 + (b2 - b1) * amt).toString(16).padStart(2, '0');
+
+  return `#${r}${g}${b}`;
+};
+
+// --- 背景描画の更新 ---
+export const drawOcean = (ctx: CanvasRenderingContext2D, width: number, height: number, time: number) => {
+  // 昼（0）から夜（1）へのサイクル。約2分で1周するように調整
+  const cycle = (Math.sin(time * 0.01) + 1) / 2;
+
+  // 昼の色と夜の色を定義
+  const dayTop = '#005b8a';
+  const dayBottom = '#002a44';
+  const nightTop = '#001524';
+  const nightBottom = '#00050a';
+
+  const currentTop = lerpColor(dayTop, nightTop, cycle);
+  const currentBottom = lerpColor(dayBottom, nightBottom, cycle);
+
   const seaGradient = ctx.createLinearGradient(0, 0, 0, height);
-  seaGradient.addColorStop(0, '#005b8a');
-  seaGradient.addColorStop(0.7, '#002a44');
-  seaGradient.addColorStop(1, '#001524');
+  seaGradient.addColorStop(0, currentTop);
+  seaGradient.addColorStop(1, currentBottom);
+  
   ctx.fillStyle = seaGradient;
   ctx.fillRect(0, 0, width, height);
+
+  return cycle; // サイクル値を返して光の筋の透明度などに利用する
 };
 
 export const drawSand = (ctx: CanvasRenderingContext2D, width: number, height: number, details: SandDetail[]) => {
@@ -33,13 +65,18 @@ export const drawSand = (ctx: CanvasRenderingContext2D, width: number, height: n
   ctx.restore();
 };
 
-export const drawLightRays = (ctx: CanvasRenderingContext2D, width: number, height: number, time: number) => {
+// --- 光の筋の更新 (夜は暗くする) ---
+export const drawLightRays = (ctx: CanvasRenderingContext2D, width: number, height: number, time: number, cycle: number) => {
   ctx.save();
+  // cycle（夜に近づくほど1）に応じて透明度を落とす
+  const opacityBase = 0.05 * (1 - cycle);
+  if (opacityBase <= 0) { ctx.restore(); return; }
+
   for (let i = 0; i < 3; i++) {
     const angle = Math.sin(time * 0.2 + i) * 0.02;
     const x = (width / 3) * i + (width / 6);
     const grad = ctx.createLinearGradient(x, 0, x + (width * angle), height);
-    grad.addColorStop(0, 'rgba(255, 255, 255, 0.05)');
+    grad.addColorStop(0, `rgba(255, 255, 255, ${opacityBase})`);
     grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
     ctx.fillStyle = grad;
     ctx.beginPath();
