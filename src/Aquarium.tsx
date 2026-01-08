@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { Fish, Bubble, Weed, FishType, SandDetail } from './types';
-import { CONFIG, FISH_ASSETS } from './constants';
+import { CONFIG, FISH_ASSETS, FISH_RATIO } from './constants';
 import * as Draw from './drawUtils'; // まとめてインポート
 
 export const Aquarium = ({ width, height, count }: { width: number; height: number; count: number }) => {
@@ -40,24 +40,49 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
         FISH_ASSETS[type].forEach(src => fishPool.push({ type, src }));
       });
 
+      // 比率に基づいたタイプ選択用のリストを作成 ['Swimmers', 'Swimmers', 'Swimmers', 'Drifters', 'Crawlers']
+      const typePool: FishType[] = [];
+      (Object.keys(FISH_RATIO) as FishType[]).forEach(type => {
+        for (let i = 0; i < FISH_RATIO[type]; i++) {
+          typePool.push(type);
+        }
+      });
+
       for (let i = 0; i < count; i++) {
-        const asset = fishPool[i % fishPool.length];
+        // 1. 比率リストからランダムにタイプを決定
+        const selectedType = typePool[Math.floor(Math.random() * typePool.length)];
+        
+        // 2. そのタイプの画像リストからランダムに画像を選択
+        const imagesOfType = FISH_ASSETS[selectedType];
+        const selectedSrc = imagesOfType[Math.floor(Math.random() * imagesOfType.length)];
+      
         const img = new Image();
-        img.src = `${import.meta.env.BASE_URL}${asset.src}`;
+        img.src = `${import.meta.env.BASE_URL}${selectedSrc}`;
+        
         img.onload = () => {
           let baseY = Math.random() * (height * 0.6);
-          if (asset.type === 'Crawlers') baseY = sandTop + (sandH * 0.2);
-          else if (asset.type === 'Drifters') baseY = height * 0.3 + Math.random() * (height * 0.4);
-
+          if (selectedType === 'Crawlers') {
+            baseY = sandTop + (sandH * 0.2);
+          } else if (selectedType === 'Drifters') {
+            baseY = height * 0.3 + Math.random() * (height * 0.4);
+          }
+      
           fishes.push({
-            x: Math.random() * width, y: baseY, baseX: Math.random() * width, baseY,
-            speed: asset.type === 'Crawlers' ? CONFIG.CRAWLER.SPEED : 
-                   asset.type === 'Drifters' ? CONFIG.DRIFTER.MIN_SPEED + Math.random() * (CONFIG.DRIFTER.MAX_SPEED - CONFIG.DRIFTER.MIN_SPEED) :
+            x: Math.random() * width,
+            y: baseY,
+            baseX: Math.random() * width,
+            baseY,
+            speed: selectedType === 'Crawlers' ? CONFIG.CRAWLER.SPEED : 
+                   selectedType === 'Drifters' ? CONFIG.DRIFTER.MIN_SPEED + Math.random() * (CONFIG.DRIFTER.MAX_SPEED - CONFIG.DRIFTER.MIN_SPEED) :
                    CONFIG.SWIMMER.MIN_SPEED + Math.random() * (CONFIG.SWIMMER.MAX_SPEED - CONFIG.SWIMMER.MIN_SPEED),
             dir: Math.random() > 0.5 ? 1 : -1,
-            image: img, aspectRatio: img.width / img.height,
-            phase: Math.random() * Math.PI * 2, phaseX: Math.random() * Math.PI * 2,
-            offsetY: 0, type: asset.type, driftRadius: asset.type === 'Drifters' ? CONFIG.DRIFTER.RADIUS_BASE + Math.random() * 20 : 0
+            image: img,
+            aspectRatio: img.width / img.height,
+            phase: Math.random() * Math.PI * 2,
+            phaseX: Math.random() * Math.PI * 2,
+            offsetY: 0,
+            type: selectedType,
+            driftRadius: selectedType === 'Drifters' ? CONFIG.DRIFTER.RADIUS_BASE + Math.random() * 20 : 0
           });
         };
       }

@@ -1,9 +1,16 @@
 import type { FishType } from './types';
 
 export const FISH_ASSETS: Record<FishType, string[]> = {
-  Swimmers: ['fish1.png', 'fish2.png', 'fish3.png', 'fish4.png', 'fish5.png', 'fish6.png'],
+  Swimmers: ['fish1.png', 'fish2.png', 'fish3.png', 'fish4.png', 'fish5.png', 'fish6.png', 'fish16.png', 'fish17.png', 'fish18.png', 'fish19.png'],
   Drifters: ['fish7.png', 'fish8.png'],
-  Crawlers: ['fish9.png'],
+  Crawlers: ['fish9.png', 'fish10.png', 'fish11.png', 'fish12.png', 'fish13.png', 'fish14.png', 'fish15.png'],
+};
+
+// 出現比率の設定
+export const FISH_RATIO: Record<FishType, number> = {
+  Swimmers: 6,
+  Drifters: 1,
+  Crawlers: 3,
 };
 
 export const CONFIG = {
