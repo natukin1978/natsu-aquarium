@@ -3,10 +3,10 @@ import { Aquarium } from './Aquarium';
 function App() {
   const params = new URLSearchParams(window.location.search);
   
-  const width = parseInt(params.get('width') || '800', 10);
-  const height = parseInt(params.get('height') || '450', 10);
-  // お魚の数を取得（指定がなければ 12 匹）
-  const count = parseInt(params.get('count') || '12', 10);
+  const width = parseInt(params.get('width') || '1200', 10);
+  const height = parseInt(params.get('height') || '200', 10);
+  // お魚の数を取得
+  const count = parseInt(params.get('count') || '15', 10);
 
   return (
     <div style={{ 
