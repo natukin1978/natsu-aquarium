@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
-import type { Fish, Bubble, Weed, FishType, SandDetail, BubbleEmitter } from './types';
-import { CONFIG, FISH_ASSETS, FISH_RATIO } from './constants';
+import type { Fish, Bubble, Weed, FishType, SandDetail, BubbleEmitter, Decor } from './types';
+import { CONFIG, FISH_ASSETS, FISH_RATIO, DECOR_ASSETS } from './constants';
 import * as Draw from './drawUtils'; // まとめてインポート
 
 export const Aquarium = ({ width, height, count }: { width: number; height: number; count: number }) => {
@@ -18,6 +18,9 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
     const bubbles: Bubble[] = [];
     const weeds: Weed[] = [];
     const sandDetails: SandDetail[] = [];
+
+    const backgroundDecors: Decor[] = [];
+    const foregroundDecors: Decor[] = [];
 
     // --- 初期化 ---
     const init = () => {
@@ -98,6 +101,33 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
           weeds.push({ x: cx + (Math.random() - 0.5) * 80, targetHeight: 0.3 + Math.random() * 0.3, widthRatio: 0.04 + Math.random() * 0.02, phase: Math.random() * Math.PI * 2 });
         }
       }
+
+      // デコレーション（岩・珊瑚・流木）の生成
+      const decorTypes = Object.entries(DECOR_ASSETS);
+      for (let i = 0; i < 4; i++) { // 合計4個程度配置
+        const [_, srcs] = decorTypes[Math.floor(Math.random() * decorTypes.length)];
+        const img = new Image();
+        img.src = `${import.meta.env.BASE_URL}${srcs[Math.floor(Math.random() * srcs.length)]}`;
+        
+        img.onload = () => {
+          const isForeground = Math.random() > 0.5;
+          const scale = 0.15 + Math.random() * 0.2;
+          const w = height * scale * (img.width / img.height);
+          const h = height * scale;
+          
+          const decor = {
+            x: Math.random() * (width - w),
+            y: (height * (1 - CONFIG.ENVIRONMENT.SAND_RATIO)) - (h * 0.45), // 砂に少し埋める
+            width: w,
+            height: h,
+            image: img,
+            isForeground
+          };
+
+          if (isForeground) foregroundDecors.push(decor);
+          else backgroundDecors.push(decor);
+        };
+      }
     };
 
     const burstBubbles: Bubble[] = [];
@@ -107,6 +137,14 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
     const render = () => {
       const now = performance.now();
       time += CONFIG.ENVIRONMENT.TIME_STEP;
+
+      // --- 描画レイヤー順 ---
+      const cycle = Draw.drawOcean(ctx, width, height, time);
+      Draw.drawLightRays(ctx, width, height, time, cycle);
+      Draw.drawSand(ctx, width, height, sandDetails);
+
+      // 1. 奥側のデコレーション (岩や奥の珊瑚)
+      Draw.drawDecors(ctx, backgroundDecors);
 
       // --- 1. 既存の泡の更新 ---
       bubbles.forEach(b => {
@@ -161,13 +199,6 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
         }
       }
 
-      // --- 6. 描画処理（レイヤー順） ---
-      // 背景を描画し、現在のサイクル値（昼夜の状態）を取得
-      const cycle = Draw.drawOcean(ctx, width, height, time);
-      // サイクル値を使って光の筋を描画（夜は消える）
-      Draw.drawLightRays(ctx, width, height, time, cycle);
-      Draw.drawSand(ctx, width, height, sandDetails);
-
       // 泡の描画
       ctx.save();
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
@@ -184,6 +215,9 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
         updateFish(f, time, width, height, fishes);
         Draw.drawFish(ctx, f, height);
       });
+
+      // 4. 手前側のデコレーション (流木や手前の珊瑚)
+      Draw.drawDecors(ctx, foregroundDecors);
 
       // 水草を手前に描画 (生き物が隠れる)
       Draw.drawWeeds(ctx, weeds, time, height);

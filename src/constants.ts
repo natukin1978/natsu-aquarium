@@ -6,6 +6,12 @@ export const FISH_ASSETS: Record<FishType, string[]> = {
   Crawlers: ['fish9.png', 'fish10.png', 'fish11.png', 'fish12.png', 'fish13.png', 'fish14.png', 'fish15.png'],
 };
 
+export const DECOR_ASSETS = {
+  Rocks: ['rock1.png', 'rock2.png', 'rock3.png', 'rock4.png', 'rock5.png', 'rock5.png'],
+  Corals: ['coral1.png', 'coral2.png', 'coral3.png'],
+  Driftwood: ['wood1.png','wood2.png','wood3.png']
+};
+
 // 出現比率の設定
 export const FISH_RATIO: Record<FishType, number> = {
   Swimmers: 6,

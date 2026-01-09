@@ -1,4 +1,4 @@
-import type { Fish, Weed, SandDetail } from './types';
+import type { Fish, Weed, SandDetail, Decor } from './types';
 import { CONFIG } from './constants';
 
 // 2つの色を混ぜるヘルパー関数 ---
@@ -117,4 +117,10 @@ export const drawWeeds = (ctx: CanvasRenderingContext2D, weeds: Weed[], time: nu
     ctx.fill();
   });
   ctx.restore();
+};
+
+export const drawDecors = (ctx: CanvasRenderingContext2D, decors: Decor[]) => {
+  decors.forEach(d => {
+    ctx.drawImage(d.image, d.x, d.y, d.width, d.height);
+  });
 };

@@ -16,6 +16,15 @@ export interface Fish {
   driftRadius: number;
 }
 
+export interface Decor {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  image: HTMLImageElement;
+  isForeground: boolean;
+}
+
 export interface Bubble { x: number; y: number; size: number; speed: number; offset: number; }
 export interface Weed { x: number; targetHeight: number; widthRatio: number; phase: number; }
 
