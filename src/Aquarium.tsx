@@ -104,27 +104,31 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
 
       // デコレーション（岩・珊瑚・流木）の生成
       const decorTypes = Object.entries(DECOR_ASSETS);
-      for (let i = 0; i < 4; i++) { // 合計4個程度配置
+      for (let i = 0; i < 4; i++) {
         const [_, srcs] = decorTypes[Math.floor(Math.random() * decorTypes.length)];
         const img = new Image();
         img.src = `${import.meta.env.BASE_URL}${srcs[Math.floor(Math.random() * srcs.length)]}`;
         
         img.onload = () => {
-          const isForeground = Math.random() > 0.5;
-          const scale = 0.15 + Math.random() * 0.2;
+          // 0（奥）〜 1（手前）の深度をランダムに決定
+          const depth = Math.random(); 
+          
+          // 深度に応じてサイズを変更（奥なら 0.15、手前なら 0.4 程度）
+          const scale = 0.15 + depth * 0.25; 
           const w = height * scale * (img.width / img.height);
           const h = height * scale;
           
           const decor = {
             x: Math.random() * (width - w),
-            y: (height * (1 - CONFIG.ENVIRONMENT.SAND_RATIO)) - (h * 0.45), // 砂に少し埋める
+            // 深度に応じて配置場所もわずかに上下させる（奥ほど少し上にする）
+            y: (height * (1 - CONFIG.ENVIRONMENT.SAND_RATIO)) - (h * 0.45) + (depth * 10),
             width: w,
             height: h,
             image: img,
-            isForeground
+            isForeground: depth > 0.6 // 深度が 0.6 以上なら「手前」と判定
           };
 
-          if (isForeground) foregroundDecors.push(decor);
+          if (decor.isForeground) foregroundDecors.push(decor);
           else backgroundDecors.push(decor);
         };
       }
