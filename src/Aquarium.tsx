@@ -104,28 +104,41 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
 
       // デコレーション（岩・珊瑚・流木）の生成
       const decorTypes = Object.entries(DECOR_ASSETS);
-      for (let i = 0; i < 4; i++) {
+      const placedDecors: {x: number, w: number}[] = []; // 配置済みの横位置を記録
+      const MIN_DISTANCE = width * 0.15; // オブジェクト間の最小距離（水槽幅の15%程度）
+
+      for (let i = 0; i < 6; i++) {
         const [_, srcs] = decorTypes[Math.floor(Math.random() * decorTypes.length)];
         const img = new Image();
         img.src = `${import.meta.env.BASE_URL}${srcs[Math.floor(Math.random() * srcs.length)]}`;
         
         img.onload = () => {
-          // 0（奥）〜 1（手前）の深度をランダムに決定
+          let x = 0;
+          let attempts = 0;
+          let isOverlapping = true;
+
+          // 重ならない場所が見つかるまで最大50回試行
+          while (isOverlapping && attempts < 50) {
+            x = Math.random() * (width - (height * 0.4)); // およその幅を考慮
+            isOverlapping = placedDecors.some(pd => Math.abs(x - pd.x) < MIN_DISTANCE);
+            attempts++;
+          }
+
           const depth = Math.random(); 
-          
-          // 深度に応じてサイズを変更（奥なら 0.15、手前なら 0.4 程度）
           const scale = 0.15 + depth * 0.25; 
           const w = height * scale * (img.width / img.height);
           const h = height * scale;
           
+          // 確定した横位置を記録
+          placedDecors.push({ x, w });
+
           const decor = {
-            x: Math.random() * (width - w),
-            // 深度に応じて配置場所もわずかに上下させる（奥ほど少し上にする）
+            x: x,
             y: (height * (1 - CONFIG.ENVIRONMENT.SAND_RATIO)) - (h * 0.45) + (depth * 10),
             width: w,
             height: h,
             image: img,
-            isForeground: depth > 0.6 // 深度が 0.6 以上なら「手前」と判定
+            isForeground: depth > 0.6 
           };
 
           if (decor.isForeground) foregroundDecors.push(decor);
