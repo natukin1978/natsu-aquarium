@@ -42,3 +42,12 @@ export interface BubbleEmitter {
   duration: number;
   isFinished: boolean;
 }
+
+export interface MarineSnow {
+  x: number;
+  y: number;
+  size: number;
+  speed: number;
+  amplitude: number; // 左右の揺れ幅
+  phase: number;     // 揺れのタイミング
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import type { Fish, Bubble, Weed, FishType, SandDetail, BubbleEmitter, Decor } from './types';
+import type { Fish, Bubble, Weed, FishType, SandDetail, BubbleEmitter, Decor, MarineSnow } from './types';
 import { CONFIG, FISH_ASSETS, FISH_RATIO, DECOR_ASSETS } from './constants';
 import * as Draw from './drawUtils'; // まとめてインポート
 
@@ -21,6 +21,7 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
 
     const backgroundDecors: Decor[] = [];
     const foregroundDecors: Decor[] = [];
+    const marineSnow: MarineSnow[] = [];
 
     // --- 初期化 ---
     const init = () => {
@@ -145,6 +146,18 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
           else backgroundDecors.push(decor);
         };
       }
+
+      // --- マリンスノーの初期化 (30〜50個程度) ---
+      for (let i = 0; i < 40; i++) {
+        marineSnow.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          size: 0.5 + Math.random() * 1.2,
+          speed: 0.1 + Math.random() * 0.2, // 非常にゆっくり
+          amplitude: 0.5 + Math.random() * 1.5,
+          phase: Math.random() * Math.PI * 2
+        });
+      }
     };
 
     const burstBubbles: Bubble[] = [];
@@ -155,13 +168,32 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
       const now = performance.now();
       time += CONFIG.ENVIRONMENT.TIME_STEP;
 
-      // --- 描画レイヤー順 ---
+      // --- A. 描画（背景・光・砂・奥のデコレーション） ---
       const cycle = Draw.drawOcean(ctx, width, height, time);
       Draw.drawLightRays(ctx, width, height, time, cycle);
       Draw.drawSand(ctx, width, height, sandDetails);
-
-      // 1. 奥側のデコレーション (岩や奥の珊瑚)
       Draw.drawDecors(ctx, backgroundDecors);
+
+      // --- B. マリンスノーの更新と描画 ---
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 255, 255, ${0.15 * (1 - cycle * 0.5)})`; // 夜は少し控えめにする
+      marineSnow.forEach(s => {
+        // 下降処理
+        s.y += s.speed;
+        // 左右のゆらぎ
+        const xOffset = Math.sin(time * 0.5 + s.phase) * s.amplitude;
+
+        ctx.beginPath();
+        ctx.arc(s.x + xOffset, s.y, s.size, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 画面下に行ったら上に戻る
+        if (s.y > height + 10) {
+          s.y = -10;
+          s.x = Math.random() * width;
+        }
+      });
+      ctx.restore();
 
       // --- 1. 既存の泡の更新 ---
       bubbles.forEach(b => {
