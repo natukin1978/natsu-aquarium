@@ -1,4 +1,4 @@
-export type FishType = 'Swimmers' | 'Drifters' | 'Crawlers';
+export type FishType = 'Swimmers' | 'Drifters' | 'Crawlers' | 'Jellyfish';
 
 export interface Fish {
   x: number;
@@ -14,6 +14,7 @@ export interface Fish {
   offsetY: number;
   type: FishType;
   driftRadius: number;
+  pulse?: number;
 }
 
 export interface Decor {

@@ -2,14 +2,15 @@ import type { FishType } from './types';
 
 export const FISH_ASSETS: Record<FishType, string[]> = {
   Swimmers: ['fish1.png', 'fish2.png', 'fish3.png', 'fish4.png', 'fish5.png', 'fish6.png', 'fish16.png', 'fish17.png', 'fish18.png', 'fish19.png'],
-  Drifters: ['fish7.png', 'fish8.png'],
+  Drifters: ['fish7.png'],
   Crawlers: ['fish9.png', 'fish10.png', 'fish11.png', 'fish12.png', 'fish13.png', 'fish14.png', 'fish15.png'],
+  Jellyfish: ['fish8.png'],
 };
 
 export const DECOR_ASSETS = {
   Rocks: ['rock1.png', 'rock2.png', 'rock3.png', 'rock4.png', 'rock5.png', 'rock5.png'],
   Corals: ['coral1.png', 'coral2.png', 'coral3.png'],
-  Driftwood: ['wood1.png','wood2.png','wood3.png']
+  Driftwood: ['wood1.png','wood2.png','wood3.png'],
 };
 
 // 出現比率の設定
@@ -17,6 +18,7 @@ export const FISH_RATIO: Record<FishType, number> = {
   Swimmers: 6,
   Drifters: 1,
   Crawlers: 3,
+  Jellyfish: 1,
 };
 
 export const CONFIG = {

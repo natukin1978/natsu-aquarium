@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Fish, Bubble, Weed, FishType, SandDetail, BubbleEmitter, Decor, MarineSnow } from './types';
 import { CONFIG, FISH_ASSETS, FISH_RATIO, DECOR_ASSETS } from './constants';
+import * as Jellyfish from './JellyfishLogic';
 import * as Draw from './drawUtils'; // まとめてインポート
 
 export const Aquarium = ({ width, height, count }: { width: number; height: number; count: number }) => {
@@ -261,8 +262,13 @@ export const Aquarium = ({ width, height, count }: { width: number; height: numb
 
       // 生き物と水草の描画（水草が一番手前）
       fishes.forEach(f => {
-        updateFish(f, time, width, height, fishes);
-        Draw.drawFish(ctx, f, height);
+        if (f.type === 'Jellyfish') {
+          Jellyfish.updateJellyfish(f, time);
+          Jellyfish.drawJellyfish(ctx, f, height);
+        } else {
+          updateFish(f, time, width, height, fishes);
+          Draw.drawFish(ctx, f, height);
+        }
       });
 
       // 4. 手前側のデコレーション (流木や手前の珊瑚)
