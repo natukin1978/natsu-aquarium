@@ -23,6 +23,7 @@ export const updateJellyfish = (f: Fish, time: number) => {
  */
 export const drawJellyfish = (ctx: CanvasRenderingContext2D, f: Fish, height: number) => {
   const pulse = f.pulse || 0;
+  // 閉じると細長く、開くと平べったくなる
   const scaleX = 1 - pulse * 0.15;
   const scaleY = 1 + pulse * 0.25;
 
@@ -31,18 +32,27 @@ export const drawJellyfish = (ctx: CanvasRenderingContext2D, f: Fish, height: nu
   const h = size;
 
   ctx.save();
+
+  // 1. まず、くらげの「頭頂部の位置」を基準点として移動
   ctx.translate(f.x, f.y);
 
-  // ★追加：横揺れ(drift)に合わせてわずかに角度をつける（水の抵抗感）
+  // 2. 移動方向や水の抵抗に合わせたわずかな回転
   const tilt = Math.sin(performance.now() * 0.001 + f.phaseX) * 0.1;
   ctx.rotate(tilt);
 
+  // 3. 発光エフェクト
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = 'rgba(180, 220, 255, 0.6)';
+
+  // 4. スケーリング（ここが重要：translateされた(0,0)を起点に拡大縮小）
   ctx.scale(scaleX, scaleY);
   ctx.globalAlpha = 0.6 + (1 - pulse) * 0.2;
 
-  // 中心を軸に描画
-  ctx.shadowBlur = 15;
-  ctx.shadowColor = 'rgba(180, 220, 255, 0.6)';
-  ctx.drawImage(f.image, -w / 2, -h / 2, w, h);
+  // 5. 描画位置の調整
+  // 中心基準なら (-w/2, -h/2) ですが、
+  // 頭頂部基準にするため、Xは中央 (-w/2)、Yは「0」から開始します
+  // これにより、(0,0) つまり f.y の位置が頭のてっぺんになります
+  ctx.drawImage(f.image, -w / 2, 0, w, h);
+
   ctx.restore();
 };
