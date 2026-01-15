@@ -23,22 +23,26 @@ export const updateJellyfish = (f: Fish, time: number) => {
  */
 export const drawJellyfish = (ctx: CanvasRenderingContext2D, f: Fish, height: number) => {
   const pulse = f.pulse || 0;
-  // 拍動によるスケーリング：閉じると細長く、開くと平べったく
   const scaleX = 1 - pulse * 0.15;
   const scaleY = 1 + pulse * 0.25;
 
-  const size = height * 0.35;
+  const size = height * 0.35; 
   const w = size * f.aspectRatio;
   const h = size;
 
   ctx.save();
   ctx.translate(f.x, f.y);
-  ctx.scale(scaleX, scaleY);
-  
-  // くらげ特有の半透明感
-  ctx.globalAlpha = 0.7 + (1 - pulse) * 0.2;
 
-  // 画像の描画（中心を軸にする）
+  // ★追加：横揺れ(drift)に合わせてわずかに角度をつける（水の抵抗感）
+  const tilt = Math.sin(performance.now() * 0.001 + f.phaseX) * 0.1;
+  ctx.rotate(tilt);
+
+  ctx.scale(scaleX, scaleY);
+  ctx.globalAlpha = 0.6 + (1 - pulse) * 0.2;
+
+  // 中心を軸に描画
+  ctx.shadowBlur = 15;
+  ctx.shadowColor = 'rgba(180, 220, 255, 0.6)';
   ctx.drawImage(f.image, -w / 2, -h / 2, w, h);
   ctx.restore();
 };
