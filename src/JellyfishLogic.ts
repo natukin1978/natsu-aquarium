@@ -24,10 +24,10 @@ export const updateJellyfish = (f: Fish, time: number) => {
 export const drawJellyfish = (ctx: CanvasRenderingContext2D, f: Fish, height: number) => {
   const pulse = f.pulse || 0;
   // 拍動によるスケーリング：閉じると細長く、開くと平べったく
-  const scaleX = 1 - pulse * 0.25;
-  const scaleY = 1 + pulse * 0.35;
+  const scaleX = 1 - pulse * 0.15;
+  const scaleY = 1 + pulse * 0.25;
 
-  const size = height * 0.5;
+  const size = height * 0.35;
   const w = size * f.aspectRatio;
   const h = size;
 
